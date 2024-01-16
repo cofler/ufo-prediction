@@ -80,6 +80,7 @@ class AgePredictor(Regressor):
         self.print_model_error()
         _, axis = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
         visualizations.plot_regression_error(self.model, ax=axis[0])
+        logger.info(self.y_test.shape + self.y_predict.shape )
         visualizations.plot_histogram(
             self.y_test, self.y_predict, bins=utils.age_bins(self.y_predict), ax=axis[1])
         visualizations.plot_relative_grid(self.y_test, self.y_predict)

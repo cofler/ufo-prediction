@@ -14,6 +14,8 @@ def calculate_energy_error(y_true, y_predict, labels=None):
     y_true = assign_heating_energy_demand(y_true, labels)
     y_predict = assign_heating_energy_demand(y_predict, labels)
 
+    logger.info("y_true " + y_true.shape + " y predict" + y_predict.shape)
+
     ids = y_true.index.intersection(y_predict.index)
     y_true = y_true.loc[ids]
     y_predict = y_predict.loc[ids]
@@ -42,11 +44,13 @@ def assign_heating_energy_demand(df, labels=None):
 
     if labels:
         # matching on existing age bins (classification)
+        logger.info('matching on existing age bins (classification)')
         class_to_label = dict(enumerate(labels))
         df['age_bin'] = df['age'].map(class_to_label)
         df = pd.merge(df, tabula_energy_df,  how='left', on=['country', 'residential_type', 'age_bin']).set_index('id', drop=False)
     else:
         # binning continuous age (regression)
+        logger.info('binning continuous age (regression)')
         df = pd.merge(df, tabula_energy_df,  how='left', on=['country', 'residential_type']).set_index('id', drop=False)
         df = df.query(f'age_min <= {dataset.AGE_ATTRIBUTE} < age_max')
 
