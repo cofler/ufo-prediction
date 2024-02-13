@@ -12,8 +12,8 @@ from prediction_age import AgeClassifier, AgePredictor
 
 
 # PIK cluster
-DATA_DIR = '/p/projects/eubucco/data/3-ml-inputs'
-RESULT_DIR = '/p/tmp/floriann/ml-training'
+DATA_DIR = 'C:\\Users\\utente\\ufo-prediction\\demo'
+RESULT_DIR = 'C:\\Users\\utente\\ufo-prediction\\results'
 
 # local test
 # DATA_DIR = os.path.join(os.path.abspath(''), '..', 'data', 'exp')

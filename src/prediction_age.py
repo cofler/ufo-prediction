@@ -72,6 +72,7 @@ class AgePredictor(Regressor):
     def print_model_error(self):
         super().print_model_error()
         r2, mape = self.energy_error()
+        
         print(f'R2: {r2:.4f}')
         print(f'MAPE: {mape:.4f}')
 
@@ -83,7 +84,7 @@ class AgePredictor(Regressor):
         logger.info(self.y_test.shape + self.y_predict.shape )
         visualizations.plot_histogram(
             self.y_test, self.y_predict, bins=utils.age_bins(self.y_predict), ax=axis[1])
-        visualizations.plot_relative_grid(self.y_test, self.y_predict)
+        visualizations.plot_relative_grid(self.y_test, self.y_predict, 'age')
         plt.show()
 
 
@@ -267,6 +268,151 @@ class AgePredictorComparison(PredictorComparison):
                 age_distributions[f'{name}_predict'] = predictors[0].y_predict[predictors[0].target_attribute]
                 age_distributions[f'{name}_test'] = predictors[0].y_test[predictors[0].target_attribute]
             visualizations.plot_distribution(age_distributions)
+
+        return pd.DataFrame(self.comparison_metrics).sort_values(by=['R2'])
+
+
+    def evaluate_comparison(self, *args, **kwargs):
+        return self.evaluate(*args, **kwargs)  # for backwards compatibility
+
+
+    def determine_predictor_identifier(self, param_name, param_value, baseline_value):
+        if param_name == 'preprocessing_stages':
+            additional_stages = list(set(param_value) - set(baseline_value))
+            stage_names = [getattr(stage, '__name__', stage) for stage in additional_stages]
+            return f'add_preprocessing:{stage_names}'
+
+        return f'{param_name}_{param_value}'
+    
+
+
+
+class HeightPredictor(Regressor):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, target_attribute=dataset.HEIGHT_ATTRIBUTE)
+
+
+    def _pre_preprocess_analysis_hook(self):
+        logger.info(f"Dataset standard deviation: {self.df[self.target_attribute].std()}")
+        logger.info(f"Dataset mean age: {self.df[self.target_attribute].mean()}")
+        logger.info(f'Training dataset length: {len(self.df_train)}')
+        logger.info(f'Test dataset length: {len(self.df_test)}')
+
+
+    def _post_preprocess_analysis_hook(self):
+        # The standard deviation in the test set gives us an indication of a
+        # baseline. We want to be able to be substantially below that value.
+        logger.info(f"Test dataset standard deviation after preprocessing: {self.df_test[self.target_attribute].std()}")
+        logger.info(f"Test dataset mean age after preprocessing: {self.df_test[self.target_attribute].mean()}")
+        logger.info(f'Training dataset length after preprocessing: {len(self.df_train)}')
+        logger.info(f'Test dataset length after preprocessing: {len(self.df_test)}')
+
+
+    def eval_metrics(self):
+        eval_df = super().eval_metrics()
+
+        return eval_df
+
+
+    @Predictor.cv_aware
+    def print_model_error(self):
+        super().print_model_error()
+
+
+    def evaluate(self):
+        
+        self.print_model_error()
+        _, axis = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
+        visualizations.plot_regression_error(self.model, ax=axis[0])
+        logger.info(self.y_test.shape + self.y_predict.shape )
+        visualizations.plot_histogram(
+            self.y_test, self.y_predict, bins=utils.height_bins(self.y_predict), ax=axis[1])
+        print("here")
+        visualizations.plot_relative_grid(self.y_test, self.y_predict, 'height')
+        plt.show()
+
+
+    def evaluate_regression(self):
+        self.evaluate()  # for backwards compatibility
+
+
+    @Predictor.cv_aware
+    def energy_error(self):
+        raise NotImplementedError('To be implemented.')
+
+    @staticmethod
+    def load(path):
+        predictor = pickle.load(open(path, 'rb'))
+
+        if isinstance(predictor, HeightPredictor):
+            return predictor
+
+        logger.error(f'The object loaded from {path} is not an HeightPredictor instance.')
+
+class HeightPredictorComparison(PredictorComparison):
+
+    def __init__(self, compare_error_distribution=False, compare_fit_time=False, compare_spatial_autocorrelation=False, compare_classification_error=False, *args, **kwargs) -> None:
+        self.compare_fit_time = compare_fit_time
+        self.compare_error_distribution = compare_error_distribution
+        self.compare_spatial_autocorrelation = compare_spatial_autocorrelation
+        self.compare_classification_error = compare_classification_error
+        super().__init__(*args, **kwargs, predictor_type=AgePredictor)
+
+
+    def _evaluate_experiment(self, name):
+        predictors = self.predictors[name]
+        eval_metrics = {}
+        eval_metrics['name'] = name
+        # average eval metrics across seeds
+        eval_metrics['R2'] = self._mean(predictors, 'r2')
+        eval_metrics['R2_std'] = self._std(predictors, 'r2')
+        eval_metrics['MAE'] = self._mean(predictors, 'mae')
+        eval_metrics['MAE_std'] = self._std(predictors, 'mae')
+        eval_metrics['RMSE'] = self._mean(predictors, 'rmse')
+        eval_metrics['RMSE_std'] = self._std(predictors, 'rmse')
+
+        bins = [0, 5, 10, 20]
+        # bins = [0, 0.5, 1, 2.5, 5, 10]
+        hist = self._mean(predictors, 'error_cum_hist', bins)
+
+        for idx, bin in enumerate(bins[1:]):
+            eval_metrics[f'within_{bin}_height'] = hist.flat[idx]
+
+        for seed, predictor in enumerate(predictors):
+            eval_metrics[f'R2_seed_{seed}'] = predictor.r2()
+
+        if self.compare_fit_time:
+            eval_metrics['e2e_time'] = (time.time() - self.time_start) / len(predictors)
+
+        if self.compare_error_distribution:
+            eval_metrics['skew'] = self._mean(predictors, 'skew')
+            eval_metrics['kurtosis'] = self._mean(predictors, 'kurtosis')
+
+        if self.compare_spatial_autocorrelation:
+            eval_metrics['residuals_moranI_KNN'] = predictors[0].spatial_autocorrelation_moran('error', 'knn').I
+            eval_metrics['residuals_moranI_block'] = predictors[0].spatial_autocorrelation_moran('error', 'block').I
+            eval_metrics['residuals_moranI_distance'] = predictors[0].spatial_autocorrelation_moran('error', 'distance').I
+            eval_metrics['prediction_moranI_KNN'] = predictors[0].spatial_autocorrelation_moran(predictors[0].target_attribute, 'knn').I
+            eval_metrics['prediction_moranI_block'] = predictors[0].spatial_autocorrelation_moran(predictors[0].target_attribute, 'block').I
+            eval_metrics['prediction_moranI_distance'] = predictors[0].spatial_autocorrelation_moran(predictors[0].target_attribute, 'distance').I
+
+        if self.compare_classification_error:
+            for bin_size in [5, 10, 20]:
+                bins = utils.generate_bins((1900, 2020, bin_size))
+                eval_metrics[f'MCC_{bin_size}'] = self._mean(predictors, 'mcc', bins)
+                eval_metrics[f'MCC_std_{bin_size}'] = self._std(predictors, 'mcc', bins)
+
+        return eval_metrics
+
+
+    def evaluate(self, include_plot=False):
+        if include_plot:
+            height_distributions = {}
+            for name, predictors in self.predictors.items():
+                height_distributions[f'{name}_predict'] = predictors[0].y_predict[predictors[0].target_attribute]
+                height_distributions[f'{name}_test'] = predictors[0].y_test[predictors[0].target_attribute]
+            visualizations.plot_distribution(height_distributions)
 
         return pd.DataFrame(self.comparison_metrics).sort_values(by=['R2'])
 

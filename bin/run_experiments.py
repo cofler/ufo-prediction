@@ -15,6 +15,9 @@ def run_experiment():
     rq = os.environ.get('RQ')
     method = os.environ.get('METHOD')
 
+    rq = '1'
+    method = 'regression'
+
     if rq == '0' or rq == 'prelim':
         hyperparameter_tuning.tune(method)
         prelim.model_selection(method)

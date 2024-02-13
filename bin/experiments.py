@@ -15,13 +15,14 @@ import utils
 import dataset
 import preparation
 import preprocessing as pp
-from prediction_age import AgePredictor, AgeClassifier, AgePredictorComparison, AgeClassifierComparison
+from prediction_age import AgePredictor, AgeClassifier, AgePredictorComparison, HeightPredictorComparison, AgeClassifierComparison
 from prediction_type import TypeClassifierComparison
-import cluster_utils.dataset as cluster_dataset
+#import cluster_utils.dataset as cluster_dataset
 
 # DATA
-RESULT_DIR = '/p/tmp/floriann/ml-exp' # PIK cluster
-DATA_DIR = '/p/projects/eubucco/data/3-ml-inputs' # PIK cluster
+
+DATA_DIR = 'C:\\Users\\utente\\ufo-prediction\\demo'
+RESULT_DIR = 'C:\\Users\\utente\\ufo-prediction\\results'
 # DATA_DIR = os.path.join(os.path.abspath(''), 'data', 'exp') # local test
 # RESULT_DIR = os.path.join(os.path.abspath(''), 'data', 'exp', 'results') # local test
 
@@ -32,7 +33,7 @@ ALL_DATA_PATH = os.path.join(DATA_DIR, 'df-NLD-FRA-ESP-exp.pkl')
 
 
 # DEFAULT MODEL PARAMS
-XGBOOST_PARAMS = {'tree_method': 'gpu_hist'}
+XGBOOST_PARAMS = {'tree_method': 'auto'}
 FRAC = None
 PREPROC_STAGES = [pp.remove_buildings_pre_1900]
 BIN_CONFIG = (1900, 2020, 5)
@@ -455,7 +456,7 @@ def compare_countries_height_prediction():
         'block-cv': {'cross_validation_split': pp.sbb_cross_validation},
     }
 
-    comparison = AgePredictorComparison(
+    comparison = HeightPredictorComparison(
         exp_name=exp_name,
         model=XGBRegressor(**XGBOOST_PARAMS),
         df=None,

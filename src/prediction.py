@@ -483,7 +483,6 @@ class Regressor(Predictor):
         print('RMSE: {:.2f} y'.format(self.rmse()))
         print('R2: {:.4f}'.format(self.r2()))
 
-
     @Predictor.cv_aware
     def mae(self):
         return metrics.mean_absolute_error(self.y_test, self.y_predict)

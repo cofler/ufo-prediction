@@ -32,6 +32,13 @@ def age_bins(y, bin_size=1):
     max_age = math.ceil(y[dataset.AGE_ATTRIBUTE].max())
     return list(range(min_age, max_age + 1))[0::bin_size]
 
+def height_bins(y, bin_size=1):
+    # lower bound inclusive
+    min_age = math.floor(y[dataset.HEIGHT_ATTRIBUTE].min())
+    # upper bound inclusive for histogram plotting, exclusive for categorizing variables
+    max_age = math.ceil(y[dataset.HEIGHT_ATTRIBUTE].max())
+    return list(range(min_age, max_age + 1))[0::bin_size]
+
 
 def generate_bins(bin_config):
     min_age = bin_config[0]  # inclusive
