@@ -17,6 +17,7 @@ def run_experiment():
 
     rq = '1'
     method = 'regression'
+    target = 'height'
 
     if rq == '0' or rq == 'prelim':
         hyperparameter_tuning.tune(method)
@@ -33,7 +34,7 @@ def run_experiment():
         exp.evaluate_specialized_regional_models(method)
     
     elif rq == '3' or rq == 'regional-generalization':
-        exp.generalize_across_countries(method)
+        exp.generalize_across_countries(method, target)
     
     elif rq == '3b' or rq == 'spatial-distance':
         exp.evaluate_impact_of_spatial_distance_on_generalization(method, 'ESP')

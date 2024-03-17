@@ -479,8 +479,8 @@ class Regressor(Predictor):
 
     @Predictor.cv_aware
     def print_model_error(self):
-        print('MAE: {:.2f} y'.format(self.mae()))
-        print('RMSE: {:.2f} y'.format(self.rmse()))
+        print('MAE: {:.2f} '.format(self.mae()))
+        print('RMSE: {:.2f} '.format(self.rmse()))
         print('R2: {:.4f}'.format(self.r2()))
 
     @Predictor.cv_aware

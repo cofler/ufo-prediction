@@ -15,7 +15,7 @@ import utils
 import dataset
 import preparation
 import preprocessing as pp
-from prediction_age import AgePredictor, AgeClassifier, AgePredictorComparison, HeightPredictorComparison, AgeClassifierComparison
+from prediction_age import AgePredictor, AgeClassifier, AgePredictorComparison, HeightPredictor, HeightPredictorComparison, AgeClassifierComparison
 from prediction_type import TypeClassifierComparison
 #import cluster_utils.dataset as cluster_dataset
 
@@ -43,6 +43,13 @@ HYPERPARAMETERS = {
     'max_depth': 13,
     'learning_rate': 0.025,
     'n_estimators': 1000,
+    'colsample_bytree': 0.9,
+    'colsample_bylevel': 0.5,
+}
+HYPERPARAMETERS_TESTING = {
+    'max_depth': 10,
+    'learning_rate': 0.1,
+    'n_estimators': 100,
     'colsample_bytree': 0.9,
     'colsample_bylevel': 0.5,
 }
@@ -210,7 +217,7 @@ Research Question 3
 Inference of building age across countries with no local information available.
 Assessment of data and prediction quality across countries.
 """
-def generalize_across_countries(method):
+def generalize_across_countries(method, target):
     n_cv_splits = pp.N_CV_SPLITS
     pp.N_CV_SPLITS = 3
 
@@ -231,16 +238,28 @@ def generalize_across_countries(method):
 
     elif method == 'regression':
 
-        logger.info('RQ3 - Training regression model for cross-country generalization...')
-        predictor = AgePredictor(
-            model=XGBRegressor(**XGBOOST_PARAMS),
-            df=ALL_DATA_PATH, # do not reuse same df as it has been grouped
-            frac=FRAC,
-            cross_validation_split=pp.country_cross_validation,
-            preprocessing_stages=PREPROC_STAGES,
-            hyperparameters=HYPERPARAMETERS,
-            early_stopping=EARLY_STOPPING,
-        )
+        logger.info('RQ3 - Training ' + target + ' regression model for cross-country generalization...')
+        
+        if target == 'age':
+            predictor = AgePredictor(
+                model=XGBRegressor(**XGBOOST_PARAMS),
+                df=ALL_DATA_PATH, # do not reuse same df as it has been grouped
+                frac=FRAC,
+                cross_validation_split=pp.country_cross_validation,
+                preprocessing_stages=PREPROC_STAGES,
+                hyperparameters=HYPERPARAMETERS,
+                early_stopping=EARLY_STOPPING,
+            )
+        else:
+            predictor = HeightPredictor(
+                model=XGBRegressor(**XGBOOST_PARAMS),
+                df=ALL_DATA_PATH, # do not reuse same df as it has been grouped
+                frac=FRAC,
+                cross_validation_split=pp.country_cross_validation,
+                preprocessing_stages=PREPROC_STAGES,
+                hyperparameters=HYPERPARAMETERS_TESTING,
+                early_stopping=EARLY_STOPPING,
+            )
 
 
     logger.info('Calculating model error...')
@@ -446,14 +465,10 @@ def compare_countries_height_prediction():
         'France': {'df': FRA_DATA_PATH},
         'Spain': {'df': ESP_DATA_PATH},
         'Netherlands': {'df': NLD_DATA_PATH},
-        'All': {'df': ALL_DATA_PATH},
     }
 
     grid_comparison_config = {
         'random-cv': {'cross_validation_split': pp.cross_validation},
-        'neighborhood-cv': {'cross_validation_split': pp.neighborhood_cross_validation},
-        'city-cv': {'cross_validation_split': pp.city_cross_validation},
-        'block-cv': {'cross_validation_split': pp.sbb_cross_validation},
     }
 
     comparison = HeightPredictorComparison(

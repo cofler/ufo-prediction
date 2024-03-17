@@ -74,6 +74,7 @@ def split_by_city(df, frac=0.8):
     return split(df, 'city', frac)
 
 
+
 def split_by_block(df, frac=0.8):
     return split(df, 'block', frac)
 
@@ -154,7 +155,7 @@ def neighborhood_cross_validation(df, balanced_attribute=None, spatial_buffer_si
 
 def _group_cross_validation(df, attribute, balanced_attribute=None, spatial_buffer_size=None):
     n_splits = min(df[attribute].nunique(), N_CV_SPLITS)
-
+    
     if n_splits < N_CV_SPLITS:
         logger.warning(f'Fewer unique {attribute} attributes than cross-validation folds. Reducing the number of folds from {N_CV_SPLITS} to {n_splits}.')
 

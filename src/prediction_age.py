@@ -80,11 +80,11 @@ class AgePredictor(Regressor):
     def evaluate(self):
         self.print_model_error()
         _, axis = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
-        visualizations.plot_regression_error(self.model, ax=axis[0])
-        logger.info(self.y_test.shape + self.y_predict.shape )
-        visualizations.plot_histogram(
-            self.y_test, self.y_predict, bins=utils.age_bins(self.y_predict), ax=axis[1])
-        visualizations.plot_relative_grid(self.y_test, self.y_predict, 'age')
+        # visualizations.plot_regression_error(self.model, ax=axis[0])
+        # logger.info(self.y_test.shape + self.y_predict.shape )
+        # visualizations.plot_histogram(
+        #     self.y_test, self.y_predict, bins=utils.age_bins(self.y_predict), ax=axis[1])
+        # visualizations.plot_relative_grid(self.y_test, self.y_predict, 'age')
         plt.show()
 
 
@@ -328,9 +328,24 @@ class HeightPredictor(Regressor):
         logger.info(self.y_test.shape + self.y_predict.shape )
         visualizations.plot_histogram(
             self.y_test, self.y_predict, bins=utils.height_bins(self.y_predict), ax=axis[1])
+        np.savetxt(f"targets.csv", self.y_test, delimiter=",")
+        np.savetxt(f"predictions.csv", self.y_predict, delimiter=",")
         print("here")
         visualizations.plot_relative_grid(self.y_test, self.y_predict, 'height')
         plt.show()
+
+    def evaluate_final(self, df_final_test):
+
+        y_final_test = df_final_test[self.target_attribute]
+        X_final_test = df_final_test.drop(self.target_attribute, axis=1, inplace=True)
+        feature_cols = list(self.df_test.columns.intersection(dataset.FEATURES))
+        X_final_test = X_final_test.drop(columns=feature_cols)
+
+        y_predict_test = pd.DataFrame(
+                {self.target_attribute: self.model.predict(X_final_test)}, index=self.X_test.index)
+        metrics.mean_absolute_error(y_final_test, y_predict_test)
+
+
 
 
     def evaluate_regression(self):
@@ -357,7 +372,7 @@ class HeightPredictorComparison(PredictorComparison):
         self.compare_error_distribution = compare_error_distribution
         self.compare_spatial_autocorrelation = compare_spatial_autocorrelation
         self.compare_classification_error = compare_classification_error
-        super().__init__(*args, **kwargs, predictor_type=AgePredictor)
+        super().__init__(*args, **kwargs, predictor_type=HeightPredictor)
 
 
     def _evaluate_experiment(self, name):
@@ -372,7 +387,7 @@ class HeightPredictorComparison(PredictorComparison):
         eval_metrics['RMSE'] = self._mean(predictors, 'rmse')
         eval_metrics['RMSE_std'] = self._std(predictors, 'rmse')
 
-        bins = [0, 5, 10, 20]
+        bins = range(20)
         # bins = [0, 0.5, 1, 2.5, 5, 10]
         hist = self._mean(predictors, 'error_cum_hist', bins)
 
